@@ -480,7 +480,7 @@ document.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){if(mode
 $('play').addEventListener('click',()=>{tone(523,.06);newGame()});
 $('again').addEventListener('click',newGame);
 $('menu').addEventListener('click',()=>{stopJet();setFolk(false);$('over').classList.remove('show');$('hud').style.display='none';$('title').classList.add('show');document.body.classList.remove('dead');mode='title';titleTower()});
-let lastRun={n:0,p:0,y:0},pasta=Math.floor(Math.random()*3);
+let lastRun={n:0,p:0,y:0},pasta=-1;
 const PASTAS=[
  ({n,p,y,b})=>`🚨🚨🚨 ATTENTION CLASS OF 2012 🚨🚨🚨
 
@@ -520,7 +520,120 @@ Times I broke The Lean™: 0 ❌
 
 The senior portrait photographer 📸 looked at those blocks in 2012 and whispered "daddy" 🥹 and honestly?? Valid 🙏🙏
 
-Stack 2012 🧱 Hand on chin edition 🤜😐 Call me daddy or beat my score 🫵😤🔥`];
+Stack 2012 🧱 Hand on chin edition 🤜😐 Call me daddy or beat my score 🫵😤🔥`,
+ ({n,p,y,b})=>`📰 BREAKING NEWS 📰
+
+Local legend stacks ${n} blocks, refuses to remove chin from fist 🤜😐
+
+Witnesses describe the scene as "disturbingly smooth" 😳 and "honestly kind of hot" 🥵
+
+"He just kept dropping them perfectly," said one onlooker 🎯 "${p} times. I had to sit down." 🪑😮‍💨
+
+Sources confirm he graduated ${y} time${y===1?'':'s'} 🎓 and is now being called "Daddy" by the blocks themselves 🧱🗣️
+
+His personal best of ${b} remains unbeaten 🏆 Authorities advise the public not to challenge him 🚨
+
+More at 11 📺😏`,
+ ({n,p,y,b})=>`I'm thrilled to announce 🎉 that after years of grinding 💼 I've stacked ${n} blocks in Stack 2012 🧱
+
+Key takeaways from my journey:
+1️⃣ Consistency is key. ${p} perfect drops don't happen by accident 🎯
+2️⃣ Posture matters. Chin on fist. Always 🤜😐
+3️⃣ When the blocks get smaller and faster, daddy gets better 😏📈
+
+Graduated ${y} time${y===1?'':'s'} 🎓 Personal best ${b} 🏆
+
+I'd like to thank the senior portrait photographer 📸 who believed in me in 2012
+
+Agree? 👇 Open to new opportunities, and to being called daddy 🤝😌`,
+ ({n,p,y,b})=>`☀️🌡️ TODAY'S FORECAST 🌡️☀️
+
+Hot. Extremely hot 🥵🔥
+
+A high-pressure daddy system 😤 moved through the area today, stacking ${n} blocks 🧱 with ${p} perfect drops 🎯
+
+Expect heavy showers of compliments 🌧️😍 and a ${b}-block personal best 🏆 hovering over the region all week
+
+Graduation warnings remain in effect 🎓 (${y} so far)
+
+Residents are advised to stay hydrated 💦 and keep their chins on their fists 🤜😐
+
+Back to you, daddy 🎙️😏`,
+ ({n,p,y,b})=>`🎙️ *nature documentary voice* 🦁
+
+Here we observe the rare Senior Portrait Daddy 🤜😐 in his natural habitat
+
+Watch closely 👀 He positions himself beside the tower... leans... and drops. ${p} perfect drops 🎯 A breathtaking display of dominance
+
+${n} blocks stacked 🧱 ${y} graduation${y===1?'':'s'} 🎓 The females of the species are visibly flustered 🫣
+
+His personal best of ${b} 🏆 is used to attract a mate and to intimidate rival males in the group chat 📱
+
+Truly... one of nature's most majestic creatures 🌿😮‍💨`,
+ ({n,p,y,b})=>`⭐⭐⭐⭐⭐ Review of Stack 2012
+
+I came in a skeptic 🤨 I left calling myself daddy 😤
+
+Stacked ${n} blocks 🧱 Nailed ${p} perfect drops 🎯 Graduated ${y} time${y===1?'':'s'} 🎓
+
+The blocks got smaller. The blocks got faster. Daddy got STRONGER 💪😏
+
+Atmosphere: Greek music 🏛️ purple lasers 🟣 an airhorn 📯 Very romantic 🕯️🍷
+
+Only complaint: my personal best of ${b} 🏆 is now too intimidating for my friends 😔
+
+Would lean again 🤜😐 10/10`,
+ ({n,p,y,b})=>`🏟️ AND HE'S DONE IT AGAIN, FOLKS 🏟️
+
+${n} BLOCKS 🧱🧱🧱 I'VE NEVER SEEN ANYTHING LIKE IT IN ALL MY YEARS OF COMMENTATING 🎙️😱
+
+${p} PERFECT DROPS 🎯 HE'S NOT EVEN LOOKING AT THE BLOCKS, BOB 👀 HE'S LOOKING AT THE CAMERA 📸 WITH HIS CHIN ON HIS FIST 🤜😐
+
+${y} GRADUATION${y===1?'':'S'} 🎓 THE CROWD IS CHANTING "DADDY" 🗣️🗣️🗣️
+
+PERSONAL BEST OF ${b} 🏆 SOMEBODY GET THIS MAN A TROPHY AND A COLD SHOWER 🚿🥵
+
+UNBELIEVABLE 😤🔥🔥🔥`,
+ ({n,p,y,b})=>`📖 Daddy's Famous Tower Recipe 👨‍🍳
+
+Ingredients:
+🧱 ${n} blocks (any size, daddy's not picky 😏)
+🤜 1 fist, firmly placed under chin
+🎯 ${p} perfect drops
+🎓 ${y} graduation${y===1?'':'s'}, to taste
+
+Instructions:
+1. Preheat to 2012 🔥
+2. Stack gently. Then faster. Then faster 😩
+3. Lean. Do NOT stop leaning 🤜😐
+4. Serve hot 🥵 Best tower: ${b} 🏆
+
+Pairs well with Greek music 🏛️🍷 and being called daddy 😌`,
+ ({n,p,y,b})=>`🔮 YOUR HOROSCOPE 🔮
+
+The stars have aligned ✨ and they spell 2012 🧱
+
+This week you stacked ${n} blocks 🌙 Venus is in retrograde but your drops are not: ${p} perfect 🎯
+
+Mercury says you graduated ${y} time${y===1?'':'s'} 🎓 Mars says you are, cosmically speaking, daddy 😏🪐
+
+Your lucky number is ${b} 🏆 Your lucky pose is chin on fist 🤜😐
+
+Avoid people who can't stack. They are not on your level 🙅‍♂️✨`,
+ ({n,p,y,b})=>`🏠 FOR SALE 🏠
+
+One (1) tower 🧱 ${n} blocks tall, lovingly hand-stacked by daddy himself 😌
+
+Features:
+✅ ${p} perfect drops 🎯
+✅ ${y} graduation${y===1?'':'s'} 🎓
+✅ Original chin-on-fist detailing 🤜😐
+✅ Purple laser lighting 🟣
+
+Previous record holder: ${b} blocks 🏆 still lives on site
+
+Serious inquiries only 📞 No lowballs 🙄 Ask for daddy 😏`
+];
 // copy the brag as plain text. Some in-app browsers mangle the async clipboard API (pasting URL-encoded text),
 // so try the classic textarea copy first, then the clipboard API, and always show the text in a box they can select
 function copyPlain(txt){
@@ -529,7 +642,7 @@ function copyPlain(txt){
  if(!ok&&navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(txt).then(()=>true,()=>false)}
  return Promise.resolve(ok)}
 function showBrag(txt,copied){const box=$('bragBox');$('bragText').value=txt;$('bragNote').textContent=copied?'Copied! If it pastes weird, copy it from here instead.':'Your browser blocked copying. Press and hold the text to copy it.';box.classList.add('show')}
-$('share').addEventListener('click',e=>{e.stopPropagation();const txt=PASTAS[pasta++%PASTAS.length]({...lastRun,b:best});
+$('share').addEventListener('click',e=>{e.stopPropagation();let k;do{k=Math.floor(Math.random()*PASTAS.length)}while(k===pasta&&PASTAS.length>1);pasta=k;const txt=PASTAS[k]({...lastRun,b:best});
  copyPlain(txt).then(ok=>{$('share').textContent=ok?'Copied! Go paste it 😏':'Copy blocked in this browser';setTimeout(()=>$('share').textContent='Copy brag for the group chat',1600)})});
 $('bragClose').addEventListener('click',e=>{e.stopPropagation();$('bragBox').classList.remove('show')});
 $('bragAgain').addEventListener('click',e=>{e.stopPropagation();const t=$('bragText');t.focus();t.select();t.setSelectionRange(0,t.value.length);let ok=false;try{ok=document.execCommand('copy')}catch(err){}
