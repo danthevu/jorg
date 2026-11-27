@@ -80,6 +80,10 @@ body{position:fixed;inset:0;font:16px/1.4 Rubik,system-ui,sans-serif;color:var(-
 .conf{position:fixed;width:9px;height:15px;top:-20px;pointer-events:none;animation:fall linear forwards}
 .nogl{position:fixed;inset:40% 24px auto;text-align:center;display:none}
 @keyframes pulse{50%{opacity:.45}}
+.splash{position:fixed;inset:0;z-index:50;border:0;margin:0;padding:0;background:rgba(247,245,251,.78);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;color:var(--deep);font-family:Rubik,system-ui,sans-serif}
+.splash .spl-t{font:900 40px/1 Rubik,sans-serif;animation:pulse 1.3s ease-in-out infinite}
+.splash .spl-s{font:500 16px Rubik,sans-serif;color:#555}
+.splash.gone{display:none}
 .lasers{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .15s;background:radial-gradient(circle at 50% 0,rgba(110,30,190,.55),rgba(18,0,38,.8))}
 .lasers.on{opacity:1;animation:strobe .18s steps(2) 8}
 .lasers i{position:absolute;width:160vh;height:7px;border-radius:3px;transform-origin:left center;background:linear-gradient(90deg,#fff,#d9a6ff 8%,#9b3cff 40%,rgba(155,60,255,0));box-shadow:0 0 18px 5px rgba(170,80,255,.9),0 0 3px 1px #fff;animation:sweep ease-in-out infinite alternate;rotate:var(--a0)}
@@ -110,6 +114,7 @@ body.dead #muteWrap{display:none!important}
 <div class="hint" id="hint" style="display:none">Tap anywhere to drop</div>
 <div class="pop" id="pop"></div>
 
+<button class="splash" id="splash" aria-label="Tap to start with sound"><span class="spl-t">Tap to start</span><span class="spl-s">Sound on 🔊</span></button>
 <div class="panel show" id="title">
   <div id="titleTop">
     <div class="logo">STACK<div class="tiles"><i>2</i><i>0</i><i>1</i><i>2</i></div></div>
@@ -252,6 +257,12 @@ function silentLoop(){ // a looping silent <audio> keeps iOS's audio session in 
  keepAlive.play().catch(()=>{keepAlive=null})}
 const unlock=()=>{if(muted)return;silentLoop();if(keepAlive&&keepAlive.paused)keepAlive.play().catch(()=>{});audio();loadHorn();loadFolk();startMusic()};
 ['touchend','click','keydown','pointerup'].forEach(ev=>document.addEventListener(ev,unlock,{capture:true,passive:true}));
+// browsers block sound until the first tap, so open on a "tap to start" splash; skip it if audio is already allowed
+const splash=$('splash');
+const dismiss=e=>{if(e){e.preventDefault();e.stopPropagation()}splash.classList.add('gone');unlock()};
+splash.addEventListener('click',dismiss);splash.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')dismiss(e)});
+try{const probe=new (window.AudioContext||window.webkitAudioContext)();if(probe.state==='running'){splash.classList.add('gone');probe.close();setTimeout(unlock,0)}else probe.close()}catch(e){}
+setTimeout(()=>{try{splash.focus({preventScroll:true})}catch(e){}},50);
 $('mute').addEventListener('click',e=>{e.stopPropagation();muted=!muted;store.set('stack2012mute',muted?'1':'0');setMute();
  if(audio()){master.gain.setTargetAtTime(muted?0:1,ac.currentTime,.05)}if(muted){stopMusic();stopFolk();keepAlive&&keepAlive.pause()}else{unlock();tone(660,.08)}});
 document.addEventListener('visibilitychange',()=>{if(!ac)return;if(document.hidden){ac.suspend().catch(()=>{});keepAlive&&keepAlive.pause()}else if(!muted){ac.resume().catch(()=>{});keepAlive&&keepAlive.play().catch(()=>{})}});
