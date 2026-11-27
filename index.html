@@ -114,7 +114,7 @@ body.dead #muteWrap{display:none!important}
   </div>
   <div class="stack">
     <button class="btn main" id="again">Run it back</button>
-    <button class="btn ghost" id="share">Copy brag for the group chat</button>
+    <button class="btn ghost" id="share">Copy brag (copypasta)</button>
     <button class="btn ghost" id="menu">Title screen</button>
   </div>
 </div>
@@ -195,11 +195,15 @@ let folkBuf=null,folkSrc=null,folkGain=null,wantFolk=false,folkLoading=false;
 function loadFolk(){if(folkBuf||folkLoading||!audio())return;folkLoading=true;
  const bin=atob(FOLK),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
  ac.decodeAudioData(u.buffer,b=>{folkBuf=b;if(wantFolk)playFolk()},()=>{folkLoading=false})}
+let folkRate=1;
 function playFolk(){if(muted||!audio()||folkSrc)return;if(!folkBuf){loadFolk();return}
  folkGain=ac.createGain();folkGain.gain.setValueAtTime(0,ac.currentTime);folkGain.gain.linearRampToValueAtTime(.8,ac.currentTime+1.5);folkGain.connect(master);
- folkSrc=ac.createBufferSource();folkSrc.buffer=folkBuf;folkSrc.loop=true;folkSrc.connect(folkGain);folkSrc.start()}
-function stopFolk(){if(!folkSrc)return;const t=ac.currentTime;folkGain.gain.cancelScheduledValues(t);folkGain.gain.setValueAtTime(folkGain.gain.value,t);folkGain.gain.linearRampToValueAtTime(0,t+1);folkSrc.stop(t+1.1);folkSrc=null}
-function setFolk(on){if(on===wantFolk)return;wantFolk=on;if(on){stopMusic();playFolk()}else{stopFolk();startMusic()}}
+ folkSrc=ac.createBufferSource();folkSrc.buffer=folkBuf;folkSrc.loop=true;folkSrc.playbackRate.value=folkRate;folkSrc.connect(folkGain);folkSrc.start(ac.currentTime,0)}
+let fadeOut=1;
+function stopFolk(){if(!folkSrc)return;const t=ac.currentTime;folkGain.gain.cancelScheduledValues(t);folkGain.gain.setValueAtTime(folkGain.gain.value,t);folkGain.gain.linearRampToValueAtTime(0,t+fadeOut);folkSrc.stop(t+fadeOut+.05);folkSrc=null}
+function setFolk(on,restart){if(on===wantFolk&&!restart)return;wantFolk=on;
+ if(on){stopMusic();folkRate=1;if(restart&&folkSrc){fadeOut=.15;stopFolk();fadeOut=1}playFolk()}else{stopFolk();startMusic()}}
+function folkFaster(r){folkRate=Math.min(1.3,1+.04*r);if(folkSrc)folkSrc.playbackRate.setTargetAtTime(folkRate,ac.currentTime,.8)}
 function startMusic(){if(wantFolk){playFolk();return}if(musicOn||muted||!audio())return;musicOn=true;
  const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=380;const dg=ac.createGain();dg.gain.value=0;dg.gain.linearRampToValueAtTime(.07,ac.currentTime+3);
  const lfo=ac.createOscillator(),lg=ac.createGain();lfo.frequency.value=.08;lg.gain.value=120;lfo.connect(lg).connect(lp.frequency);lfo.start();
@@ -231,7 +235,7 @@ function silentLoop(){ // a looping silent <audio> keeps iOS's audio session in 
  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
  keepAlive=new Audio(URL.createObjectURL(new Blob([buf],{type:'audio/wav'})));keepAlive.loop=true;keepAlive.setAttribute('playsinline','');keepAlive.volume=.01;
  keepAlive.play().catch(()=>{keepAlive=null})}
-const unlock=()=>{if(muted)return;silentLoop();if(keepAlive&&keepAlive.paused)keepAlive.play().catch(()=>{});audio();loadHorn();startMusic()};
+const unlock=()=>{if(muted)return;silentLoop();if(keepAlive&&keepAlive.paused)keepAlive.play().catch(()=>{});audio();loadHorn();loadFolk();startMusic()};
 ['touchend','click','keydown','pointerup'].forEach(ev=>document.addEventListener(ev,unlock,{capture:true,passive:true}));
 $('mute').addEventListener('click',e=>{e.stopPropagation();muted=!muted;store.set('stack2012mute',muted?'1':'0');setMute();
  if(audio()){master.gain.setTargetAtTime(muted?0:1,ac.currentTime,.05)}if(muted){stopMusic();stopFolk();keepAlive&&keepAlive.pause()}else{unlock();tone(660,.08)}});
@@ -302,7 +306,16 @@ function makeGuy(){
   const u=Math.min(.985,Math.max(.01,.47+X/A*.33)),v=Math.min(.99,Math.max(.01,.515+Y/B*.415));
   uv.setXY(i,Z<-.02?(X<0?.02:.97):u,v)}
  hg.computeVertexNormals();
- const ft=new T.Texture(faceImg);ft.encoding=T.sRGBEncoding;ft.needsUpdate=true;
+ // face texture lives on a canvas so we can paint eyelids over his eyes to blink
+ const fc=document.createElement('canvas');fc.width=faceImg.naturalWidth||384;fc.height=faceImg.naturalHeight||432;const fx=fc.getContext('2d');fx.drawImage(faceImg,0,0);
+ const sx=fc.width/384,sy=fc.height/432,EYES=[[194,239],[283,233]].map(([x,y])=>{const px=fx.getImageData(Math.round((x-6)*sx),Math.round((y+24)*sy),12,4).data;let r=0,gg=0,b=0;for(let i=0;i<px.length;i+=4){r+=px[i];gg+=px[i+1];b+=px[i+2]}const n=px.length/4;return {x:x*sx,y:y*sy,c:`rgb(${r/n*.93|0},${gg/n*.9|0},${b/n*.9|0})`,d:`rgb(${r/n*.82|0},${gg/n*.78|0},${b/n*.78|0})`}});
+ const ft=new T.CanvasTexture(fc);ft.encoding=T.sRGBEncoding;
+ let lastK=0;
+ const setBlink=k=>{if(Math.abs(k-lastK)<.02&&k!==0)return;if(k===0&&lastK===0)return;lastK=k;fx.drawImage(faceImg,0,0);
+  if(k>0)EYES.forEach(e=>{const rx=23*sx,ry=12*sy,edge=e.y-ry+2*ry*k;fx.save();fx.beginPath();fx.ellipse(e.x,e.y,rx,ry,0,0,7);fx.clip();
+   const gr=fx.createLinearGradient(0,e.y-ry,0,edge);gr.addColorStop(0,e.c);gr.addColorStop(1,e.d);fx.fillStyle=gr;fx.filter='blur(1px)';fx.fillRect(e.x-rx,e.y-ry-2,rx*2,edge-(e.y-ry)+2);fx.filter='none';fx.strokeStyle='rgba(60,35,28,.85)';fx.lineWidth=2.2*sy;fx.beginPath();fx.moveTo(e.x-rx,edge);fx.quadraticCurveTo(e.x,edge+3*sy*k,e.x+rx,edge);fx.stroke();fx.restore()});
+  ft.needsUpdate=true};
+ g.userData.blink=setBlink;
  const head=new T.Mesh(hg,new T.MeshStandardMaterial({map:ft,roughness:.8}));head.castShadow=true;
  // hair cap over back and top, tucked under the face at the front
  const cg=new T.SphereGeometry(1,40,24,0,Math.PI*2,0,Math.PI*.8);const cp=cg.attributes.position;
@@ -359,7 +372,7 @@ function drawYear(){yr.innerHTML='2012'.split('').map((d,i)=>`<b class="${3-i<id
 function topPos(){const p=stack.length?stack[stack.length-1].position:{x:0,z:0};return new T.Vector3(p.x,height,p.z)}
 const roundLabel=()=>{$('scl').textContent=`blocks · round ${round+1}`};
 function say(txt){pop.textContent=txt;pop.classList.remove('show');void pop.offsetWidth;pop.classList.add('show')}
-function newGame(){setFolk(false);
+function newGame(){setFolk(true,true);
  clearTower();stack=[];year=2012;idx=0;round=0;size=roundSize(0);speed=roundSpeed(0);height=0;leanX=leanZ=0;perfects=0;combo=0;years=0;camY=0;mover=null;roundLabel();
  resetGuy();guy.position.set(0,0,0);
  {const b=makeBlock('2',size);b.position.set(0,size/2,0);tw.add(b);stack.push(b);height=size;idx=1}
@@ -379,7 +392,7 @@ function drop(){
  else{combo=0;sfx.drop();if(axis==='x')leanX+=d;else leanZ+=d}
  $('combo').textContent=combo>1?`${combo} perfect streak`:'';
  stack.push(mover);height+=size;mover=null;idx++;
- if(idx===4){years++;say(years>1?`Class of 2012 ×${years}!`:'Class of 2012!');sfx.fanfare();confetti();idx=0;round++;if(round===2){setFolk(true);setTimeout(()=>{if(mode==='play')say('Stomp mode!')},2000)}size=roundSize(round);speed=roundSpeed(round);roundLabel();setTimeout(()=>{if(mode==='play')say('Smaller. Faster.')},1000)}
+ if(idx===4){years++;say(years>1?`Class of 2012 ×${years}!`:'Class of 2012!');sfx.fanfare();confetti();idx=0;round++;folkFaster(round);size=roundSize(round);speed=roundSpeed(round);roundLabel();setTimeout(()=>{if(mode==='play')say('Smaller. Faster.')},1000)}
  sc.textContent=stack.length;drawYear();
  if(Math.hypot(leanX,leanZ)>1.6)return setTimeout(()=>fail(0,true),200);
  setTimeout(()=>{if(mode==='play')spawn()},160);
@@ -391,7 +404,7 @@ function fail(d,tipped){
  if(mover){fall(mover,2,1);mover=null}
  falling.push({o:guy,v:dir.clone().multiplyScalar(2.4).setY(2.4),av:new T.Vector3(dir.z*5+.5,1.5,-dir.x*5)});
  if(tipped)stack.slice(-3).forEach((b,i)=>fall(b,1+i*.6,.5));
- const n=stack.length;if(n>best){best=n;store.set('stack2012best',n)}showBest();
+ const n=stack.length;lastRun={n,p:perfects,y:years};if(n>best){best=n;store.set('stack2012best',n)}showBest();
  $('oh').textContent=tipped?'Too much lean.':'He slid off.';
  $('ot').textContent=years?`Graduated ${years} time${years>1?'s':''}. ${['Still peaked in 2012.','Held back on purpose.','Senior superlative material.'][Math.min(2,years-1)]}`:'Never even graduated.';
  $('s1').textContent=n;$('s2').textContent=perfects;$('s3').textContent=best;
@@ -407,8 +420,48 @@ document.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){if(mode
 $('play').addEventListener('click',()=>{tone(523,.06);newGame()});
 $('again').addEventListener('click',newGame);
 $('menu').addEventListener('click',()=>{setFolk(false);$('over').classList.remove('show');$('hud').style.display='none';$('title').classList.add('show');document.body.classList.remove('dead');mode='title';titleTower()});
-$('share').addEventListener('click',async()=>{const txt=`I stacked ${best} blocks in Stack 2012 (hand on chin edition). Beat that, Class of 2012.`;
- try{await navigator.clipboard.writeText(txt);$('share').textContent='Copied!'}catch(e){$('share').textContent='Copy blocked here'}setTimeout(()=>$('share').textContent='Copy brag for the group chat',1600)});
+let lastRun={n:0,p:0,y:0},pasta=Math.floor(Math.random()*3);
+const PASTAS=[
+ ({n,p,y,b})=>`🚨🚨🚨 ATTENTION CLASS OF 2012 🚨🚨🚨
+
+I just stacked ${n} BLOCKS 🧱🧱🧱 in Stack 2012 (Hand on Chin Edition™) and GRADUATED ${y} TIME${y===1?'':'S'} 🎓🎓🎓
+
+Do you understand what that means?? 🤨🤨 While you were out here living your lives 🏃‍♂️💨 I was MAINTAINING POSTURE 🧍‍♂️ with my chin on my fist 🤜😐 like a TRUE senior portrait legend 📸✨✨
+
+${p} PERFECT DROPS. 🎯🎯 The Lean™ did not waver. 📏 Scientists are calling it "the most stable lean since 2012" 👨‍🔬👩‍🔬 and they are RIGHT 💯
+
+Personal best: ${b} 🏆 And honestly?? I'm just getting started 😤🔥🔥🔥
+
+If you can't beat this you were never really in the Class of 2012 🫵😂 Pass this to 4 friends or your blocks will spell 2013 forever ☠️☠️
+
+#2012Forever #HandOnChin #TheLean 🤜😐📸`,
+ ({n,p,y,b})=>`I'm not saying I'm better than you 🙂
+
+I'm just saying I stacked ${n} blocks 🧱 and spelled 2012 ${y} time${y===1?'':'s'} 🔁 without EVER breaking the pose 🤜😌
+
+They made the blocks smaller 🤏 I didn't flinch 😐
+They made the blocks faster 💨 I didn't flinch 😐
+They played Greek music at me 🏛️🪕 I didn't flinch 😐
+The purple lasers came out 🟣🔦🟣 and the airhorn went off 📯📯📯 and I STILL had my chin on my fist 🤜😐
+
+${p} perfect drops 🎯 Personal best ${b} 🏆
+
+Some people peaked in high school. I peaked in high school AND in this game 📈📈📈
+
+Your move 🫵 Class of 2012 stands UNDEFEATED 🎓👑`,
+ ({n,p,y,b})=>`Me: stacks ${n} blocks 🧱
+The blocks: get smaller and faster every round 😰
+Me: chin on fist 🤜😐 unbothered 💅 moisturized 🧴 in my lane 🛣️ well-rested 😴 graduated ${y} time${y===1?'':'s'} 🎓
+
+Perfect drops: ${p} 🎯
+Personal best: ${b} 🏆
+Times I broke the Lean™: 0 ❌
+
+The senior portrait photographer 📸 looked at those blocks in 2012 and said "this will matter one day" 🥹 and he was RIGHT 🙏🙏🙏
+
+Stack 2012 🧱 Hand on chin edition 🤜😐 Beat my score or admit the blocks own you 🫵😤🔥`];
+$('share').addEventListener('click',async()=>{const txt=PASTAS[pasta++%PASTAS.length]({...lastRun,b:best});
+ try{await navigator.clipboard.writeText(txt);$('share').textContent='Copied!'}catch(e){$('share').textContent='Copy blocked here'}setTimeout(()=>$('share').textContent='Copy brag (copypasta)',1600)});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>e.preventDefault());
 
@@ -416,7 +469,7 @@ document.addEventListener('dblclick',e=>e.preventDefault());
 titleTower();
 let last=performance.now(),clock=0,paused=false;
 document.addEventListener('visibilitychange',()=>{paused=document.hidden;last=performance.now()});
-const tmp=new T.Vector3();
+const tmp=new T.Vector3();let nextBlink=2;
 function tick(now){requestAnimationFrame(tick);if(paused)return;
  const dt=Math.min(.05,(now-last)/1000);last=now;clock+=dt;
  if(mode==='play'&&mover){t+=dt*speed;mover.position[axis]=topPos()[axis]+Math.sin(t)*RANGE}
@@ -426,6 +479,7 @@ function tick(now){requestAnimationFrame(tick);if(paused)return;
  if(mode!=='dead'){
   const src=mover||stack[stack.length-1];if(src){src.getWorldPosition(tmp);tmp.y+=src.userData.s/2;tmp.x-=src.userData.s/2}else tmp.set(0,0,0);
   guy.position.lerp(tmp,mode==='title'?.08:(mover?.4:.25));guy.rotation.z=tw.rotation.z;guy.rotation.x=tw.rotation.x;
+  {const ph=(clock-nextBlink)/.17;if(ph>=1){nextBlink=clock+1.8+Math.random()*3.5;if(Math.random()<.2)nextBlink=clock+.25;guy.userData.blink(0)}else if(ph>=0)guy.userData.blink(1-Math.abs(ph*2-1))}
   guy.userData.legs.forEach(L=>L.rotation.x=reduce?.06:Math.sin(clock*2.2+L.userData.ph)*.12);
   head.rotation.y=.1+(reduce?0:Math.sin(clock*.8)*.18);head.rotation.x=reduce?0:Math.sin(clock*1.7)*.03;
  }
