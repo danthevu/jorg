@@ -95,12 +95,11 @@ body.dead #muteWrap{display:none!important}
 <div class="pop" id="pop"></div>
 
 <div class="panel show" id="title">
-  <div>
+  <div id="titleTop">
     <div class="logo">STACK<div class="tiles"><i>2</i><i>0</i><i>1</i><i>2</i></div></div>
     <div class="tag">Hand on chin edition</div>
   </div>
-  <div class="stack">
-    <div class="howto">Tap to drop each block and spell 2012, over and over. Every 2012 makes the blocks smaller and faster. Keep the tower straight and don't let him ride off the edge.</div>
+  <div class="stack" id="titleBottom">
     <button class="btn main" id="play">Play</button>
     <div class="note" id="bestT">Best tower: none yet</div>
   </div>
@@ -484,8 +483,13 @@ function tick(now){requestAnimationFrame(tick);if(paused)return;
   head.rotation.y=.1+(reduce?0:Math.sin(clock*.8)*.18);head.rotation.x=reduce?0:Math.sin(clock*1.7)*.03;
  }
  falling.forEach(f=>{f.v.y-=9.8*dt;f.o.position.addScaledVector(f.v,dt);f.o.rotation.x+=f.av.x*dt;f.o.rotation.y+=f.av.y*dt;f.o.rotation.z+=f.av.z*dt});
- if(mode==='title'){orbit+=reduce?0:dt*.35;const R=15.5;cam.position.set(Math.sin(orbit)*R,5,Math.cos(orbit)*R);cam.lookAt(0,2.7,0);camY=0}
- else{const want=Math.max(0,height-2);camY+=(want-camY)*Math.min(1,dt*3);cam.position.set(5.6,4.4+camY,9.4);cam.lookAt(0,1.9+camY,0)}
+ if(mode==='title'){orbit+=reduce?0:dt*.35;
+  // frame the tower and his face in the gap between the title and the Play button, swaying around the front so his face stays visible
+  const H=innerHeight,W=innerWidth,top=$('titleTop').getBoundingClientRect().bottom+10,bot=$('titleBottom').getBoundingClientRect().top-10;
+  const frac=Math.max(.25,(bot-top)/H),span=6.6,D=span/(frac*2*Math.tan(cam.fov*Math.PI/360)),ang=.35+Math.sin(orbit)*.5;
+  cam.position.set(-.4+Math.sin(ang)*D,2.9+D*.12,Math.cos(ang)*D);cam.lookAt(-.4,2.9,0);
+  cam.setViewOffset(W,H,0,-((top+bot)/2-H/2),W,H);camY=0}
+ else{if(cam.view&&cam.view.enabled)cam.clearViewOffset();const want=Math.max(0,height-2);camY+=(want-camY)*Math.min(1,dt*3);cam.position.set(5.6,4.4+camY,9.4);cam.lookAt(0,1.9+camY,0)}
  sun.position.set(4,9+camY,6);sun.target.position.set(0,camY,0);
  ren.render(scene,cam)}
 requestAnimationFrame(tick);
