@@ -21,4 +21,4 @@ All in-game audio is either synthesized live with the Web Audio API or, for *Sen
 
 ## Link preview
 
-`og-image.jpg` (1200×630 still) and `og-preview.mp4` (a 9-second loop of him with the 2012 blocks orbiting) are wired up as Open Graph tags in `index.html`. The URLs are relative right now; set them to the full deploy URL for the most reliable previews.
+`og-image.jpg` (1200×630 still) and `og-preview.mp4` (a 9-second loop of him with the 2012 blocks orbiting) are wired up as Open Graph tags in `index.html`. The tags point at https://jorg-mauve.vercel.app/. iMessage caches previews, so add something like `?v=2` to the link to see a new one.
