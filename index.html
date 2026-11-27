@@ -8,6 +8,20 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Stack 2012">
 <meta name="theme-color" content="#f7f5fb">
+<meta name="description" content="Spell 2012. Keep the Lean. A one-tap block stacker, hand on chin edition.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Stack 2012">
+<meta property="og:description" content="Spell 2012. Keep the Lean. Hand on chin edition.">
+<meta property="og:image" content="og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:video" content="og-preview.mp4">
+<meta property="og:video:type" content="video/mp4">
+<meta property="og:video:width" content="1200">
+<meta property="og:video:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="og-image.jpg">
 <title>Stack 2012</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@700&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
@@ -374,7 +388,6 @@ function buildJet(){
  const strap=new T.Mesh(new T.BoxGeometry(.32,.18,.06),red);strap.position.z=.06;pack.add(strap);
  g.add(pack);
  const flames=[];[-.12,.12].forEach(x=>{const f=flame(.1,.9);f.position.set(-.36+x,-.27,-.27);g.add(f);flames.push(f)});
- const big=flame(.45,2.2);big.position.set(0,0,0);inner.add(big);flames.push(big);
  root.scale.setScalar(.5);root.userData={flames,g};return root}
 function startJet(){if(jet)return;jet=buildJet();jet.position.set(0,-8,-14);cam.add(jet);jetT=0;
  tw.visible=false;guy.visible=false;falling.forEach(f=>{if(f.o!==guy)f.o.visible=false})}
@@ -386,8 +399,8 @@ function updateJet(dt){
   jet.position.set(x,y,-14);jet.rotation.z=-vx*.35;jet.rotation.y=Math.sin(jetT*.5)*.5;jet.rotation.x=Math.sin(jetT*.9)*.12;
   const gh=jet.userData.g.userData;gh.legs.forEach(L=>L.rotation.x=Math.sin(jetT*7+L.userData.ph)*.5);gh.head.rotation.y=Math.sin(jetT*1.3)*.3;
   jet.userData.flames.forEach((f,i)=>{const k=.8+Math.random()*.45;f.scale.set(1,k,1);
-   if(Math.random()<(i===2?.9:.5)){f.getWorldPosition(tv);tv.y-=f.userData.h*.25;
-    const sp=new T.Sprite(new T.SpriteMaterial({map:smokeTex,transparent:true,depthWrite:false,opacity:.7}));sp.position.copy(tv);const s0=i===2?.35:.18;sp.scale.set(s0,s0,1);scene.add(sp);
+   if(Math.random()<.7){f.getWorldPosition(tv);tv.y-=f.userData.h*.25;
+    const sp=new T.Sprite(new T.SpriteMaterial({map:smokeTex,transparent:true,depthWrite:false,opacity:.7}));sp.position.copy(tv);const s0=.22;sp.scale.set(s0,s0,1);scene.add(sp);
     smoke.push({s:sp,life:0,v:new T.Vector3((Math.random()-.5)*.3,-.6-Math.random()*.4,(Math.random()-.5)*.3),s0})}})}
  for(let i=smoke.length-1;i>=0;i--){const p=smoke[i];p.life+=dt;p.s.position.addScaledVector(p.v,dt);const k=p.s0*(1+p.life*2.2);p.s.scale.set(k,k,1);p.s.material.opacity=Math.max(0,.7*(1-p.life/1.6));
   if(p.life>1.6){scene.remove(p.s);p.s.material.dispose();smoke.splice(i,1)}}}

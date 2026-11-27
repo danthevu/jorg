@@ -18,3 +18,7 @@ To play on an iPhone, turn on GitHub Pages (Settings → Pages → Deploy from b
 - The Greek ambient music (bouzouki-style plucks in D Hijaz over a drone) starts on the first tap. Gameplay is scored by *Senior Year Stomp*, an original acoustic folk track that starts from the top every game, builds in tempo, and gets nudged a little faster each round. The Greek music stays on the title screen. The ♪ button mutes everything.
 
 All in-game audio is either synthesized live with the Web Audio API or, for *Senior Year Stomp*, rendered by `music/render.py` (numpy, original composition) and embedded in the page. `music/senior-year-stomp.mp3` is the full-quality track. The only outside sample is the airhorn in `sounds/airhorn.mp3`.
+
+## Link preview
+
+`og-image.jpg` (1200×630 still) and `og-preview.mp4` (a 9-second loop of him with the 2012 blocks orbiting) are wired up as Open Graph tags in `index.html`. The URLs are relative right now; set them to the full deploy URL for the most reliable previews.
