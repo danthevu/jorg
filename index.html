@@ -80,6 +80,13 @@ body{position:fixed;inset:0;font:16px/1.4 Rubik,system-ui,sans-serif;color:var(-
 .conf{position:fixed;width:9px;height:15px;top:-20px;pointer-events:none;animation:fall linear forwards}
 .nogl{position:fixed;inset:40% 24px auto;text-align:center;display:none}
 @keyframes pulse{50%{opacity:.45}}
+.brag{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 18px max(24px,env(safe-area-inset-bottom));background:rgba(30,15,60,.55)}
+.brag.show{display:flex}
+.brag-card{background:#fff;border-radius:20px;padding:16px;width:min(100%,380px);display:grid;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.brag-card p{margin:0;font:500 14px Rubik,sans-serif;color:#444}
+.brag-card textarea{width:100%;height:min(46vh,340px);border:2px solid #ddd6ee;border-radius:12px;padding:10px;font:16px/1.4 system-ui,sans-serif;resize:none;-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;touch-action:auto}
+.brag-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.brag-row .btn{min-height:48px;font-size:17px}
 .splash{position:fixed;inset:0;z-index:50;border:0;margin:0;padding:0;background:rgba(247,245,251,.78);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;color:var(--deep);font-family:Rubik,system-ui,sans-serif}
 .splash .spl-t{font:900 40px/1 Rubik,sans-serif;animation:pulse 1.3s ease-in-out infinite}
 .splash .spl-s{font:500 16px Rubik,sans-serif;color:#555}
@@ -126,6 +133,10 @@ body.dead #muteWrap{display:none!important}
   </div>
 </div>
 
+<div class="brag" id="bragBox" role="dialog" aria-label="Your brag">
+  <div class="brag-card"><p id="bragNote"></p><textarea id="bragText" readonly></textarea>
+  <div class="brag-row"><button class="btn main" id="bragAgain">Copy again</button><button class="btn ghost" id="bragClose">Done</button></div></div>
+</div>
 <div class="panel" id="over">
   <div class="card">
     <h2 id="oh">He slid off.</h2>
@@ -510,8 +521,19 @@ Times I broke The Lean™: 0 ❌
 The senior portrait photographer 📸 looked at those blocks in 2012 and whispered "daddy" 🥹 and honestly?? Valid 🙏🙏
 
 Stack 2012 🧱 Hand on chin edition 🤜😐 Call me daddy or beat my score 🫵😤🔥`];
-$('share').addEventListener('click',async()=>{const txt=PASTAS[pasta++%PASTAS.length]({...lastRun,b:best});
- try{await navigator.clipboard.writeText(txt);$('share').textContent='Copied!'}catch(e){$('share').textContent='Copy blocked here'}setTimeout(()=>$('share').textContent='Copy brag for the group chat',1600)});
+// copy the brag as plain text. Some in-app browsers mangle the async clipboard API (pasting URL-encoded text),
+// so try the classic textarea copy first, then the clipboard API, and always show the text in a box they can select
+function copyPlain(txt){
+ let ok=false;try{const ta=document.createElement('textarea');ta.value=txt;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px';
+  document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,txt.length);ok=document.execCommand('copy');ta.remove()}catch(e){}
+ if(!ok&&navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(txt).then(()=>true,()=>false)}
+ return Promise.resolve(ok)}
+function showBrag(txt,copied){const box=$('bragBox');$('bragText').value=txt;$('bragNote').textContent=copied?'Copied! If it pastes weird, copy it from here instead.':'Your browser blocked copying. Press and hold the text to copy it.';box.classList.add('show')}
+$('share').addEventListener('click',e=>{e.stopPropagation();const txt=PASTAS[pasta++%PASTAS.length]({...lastRun,b:best});
+ copyPlain(txt).then(ok=>{$('share').textContent=ok?'Copied!':'Copy it below';showBrag(txt,ok);setTimeout(()=>$('share').textContent='Copy brag for the group chat',1600)})});
+$('bragClose').addEventListener('click',e=>{e.stopPropagation();$('bragBox').classList.remove('show')});
+$('bragAgain').addEventListener('click',e=>{e.stopPropagation();const t=$('bragText');t.focus();t.select();t.setSelectionRange(0,t.value.length);let ok=false;try{ok=document.execCommand('copy')}catch(err){}
+ (ok?Promise.resolve(true):(navigator.clipboard?navigator.clipboard.writeText(t.value).then(()=>true,()=>false):Promise.resolve(false))).then(r=>{$('bragNote').textContent=r?'Copied!':'Press and hold the text to copy it.'})});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>e.preventDefault());
 
