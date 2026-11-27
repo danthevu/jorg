@@ -142,8 +142,11 @@ const showBest=()=>{$('bestT').textContent=best?`Best tower: ${best} blocks`:'Be
 let ac=null,master=null,sfxBus=null,musicBus=null,muted=store.get('stack2012mute')==='1',musicOn=false;
 const setMute=()=>{$('mute').textContent=muted?'off':'♪';$('mute').setAttribute('aria-label',muted?'Sound off':'Sound on')};setMute();
 function audio(){
- if(ac){if(ac.state==='suspended')ac.resume();return ac}
- try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}
+ if(ac){if(ac.state!=='running'&&!muted)ac.resume().catch(()=>{});return ac}
+ try{ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'playback'})}catch(e){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e2){return null}}
+ // iOS: ask for a "playback" audio session so the ringer switch and interruptions don't silence the game
+ try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+ ac.onstatechange=()=>{if(ac.state!=='running'&&!muted&&!document.hidden)ac.resume().catch(()=>{})};
  master=ac.createGain();master.gain.value=muted?0:1;master.connect(ac.destination);
  sfxBus=ac.createGain();sfxBus.connect(master);
  // music bus with a generated hall reverb
@@ -170,8 +173,9 @@ const plucks={};
 function pluckBuf(f,bright){const key=f.toFixed(2)+bright;if(plucks[key])return plucks[key];
  const sr=ac.sampleRate,len=Math.floor(sr*1.8),N=Math.round(sr/f),b=ac.createBuffer(1,len,sr),d=b.getChannelData(0);
  for(let i=0;i<N;i++)d[i]=Math.random()*2-1;
- const k=bright?.4995:.498;for(let i=N;i<len;i++)d[i]=k*(d[i-N]+d[i-N-1])+(bright?0:0);
- if(bright)for(let i=N;i<len;i++)d[i]=d[i]*.85+(d[i-1]||0)*.0; return plucks[key]=b}
+ // start at N+1 so we never read d[-1] (undefined would fill the buffer with NaN and silence the whole mix)
+ const k=bright?.4995:.498;d[N]=d[0];for(let i=N+1;i<len;i++)d[i]=k*(d[i-N]+d[i-N-1]);
+ return plucks[key]=b}
 function pluck(f,t,v=.22,bright=true){const s=ac.createBufferSource();s.buffer=pluckBuf(f,bright);const g=ac.createGain();g.gain.value=v;
  const bp=ac.createBiquadFilter();bp.type='peaking';bp.frequency.value=1800;bp.gain.value=6;s.connect(bp).connect(g).connect(musicBus);s.start(t);s.stop(t+1.8)}
 // Greek ambience: D Hijaz (D Eb F# G A Bb C) bouzouki line over a D-A drone, with lyre arpeggios
@@ -200,10 +204,20 @@ const sfx={drop:()=>tone(180,.12,'square',.12),perfect:()=>{tone(660,.1);tone(99
  fanfare:()=>[523,659,784,1047].forEach((f,i)=>tone(f,i===3?.45:.16,'square',.1,i*.13)),
  crash:()=>{tone(220,.25,'sawtooth',.14);tone(110,.4,'sawtooth',.14,.12)},posture:()=>[784,988].forEach((f,i)=>tone(f,.12,'triangle',.16,i*.08))};
 // iOS only allows audio after a tap: start everything on the first one
-const unlock=()=>{audio();startMusic()};document.addEventListener('pointerdown',unlock,{capture:true});document.addEventListener('keydown',unlock,{capture:true});
+// iOS only lets audio start from a real tap (touchend/click, not touchstart/pointerdown), so unlock and re-resume on every one
+let keepAlive=null;
+function silentLoop(){ // a looping silent <audio> keeps iOS's audio session in playback mode
+ if(keepAlive)return;const sr=8000,n=sr/2,buf=new ArrayBuffer(44+n*2),v=new DataView(buf);
+ const w=(o,str)=>{for(let i=0;i<str.length;i++)v.setUint8(o+i,str.charCodeAt(i))};
+ w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+ v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+ keepAlive=new Audio(URL.createObjectURL(new Blob([buf],{type:'audio/wav'})));keepAlive.loop=true;keepAlive.setAttribute('playsinline','');keepAlive.volume=.01;
+ keepAlive.play().catch(()=>{keepAlive=null})}
+const unlock=()=>{if(muted)return;silentLoop();if(keepAlive&&keepAlive.paused)keepAlive.play().catch(()=>{});audio();startMusic()};
+['touchend','click','keydown','pointerup'].forEach(ev=>document.addEventListener(ev,unlock,{capture:true,passive:true}));
 $('mute').addEventListener('click',e=>{e.stopPropagation();muted=!muted;store.set('stack2012mute',muted?'1':'0');setMute();
- if(audio()){master.gain.setTargetAtTime(muted?0:1,ac.currentTime,.05)}if(muted)stopMusic();else{startMusic();tone(660,.08)}});
-document.addEventListener('visibilitychange',()=>{if(!ac)return;if(document.hidden)ac.suspend();else if(!muted)ac.resume()});
+ if(audio()){master.gain.setTargetAtTime(muted?0:1,ac.currentTime,.05)}if(muted){stopMusic();keepAlive&&keepAlive.pause()}else{unlock();tone(660,.08)}});
+document.addEventListener('visibilitychange',()=>{if(!ac)return;if(document.hidden){ac.suspend().catch(()=>{});keepAlive&&keepAlive.pause()}else if(!muted){ac.resume().catch(()=>{});keepAlive&&keepAlive.play().catch(()=>{})}});
 // purple laser show
 function lasers(){const L=$('lasers');L.innerHTML='';L.classList.remove('on');void L.offsetWidth;
  const beams=[];for(let i=0;i<10;i++){const left=i%2===0,b=document.createElement('i');
