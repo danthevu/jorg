@@ -530,7 +530,7 @@ function copyPlain(txt){
  return Promise.resolve(ok)}
 function showBrag(txt,copied){const box=$('bragBox');$('bragText').value=txt;$('bragNote').textContent=copied?'Copied! If it pastes weird, copy it from here instead.':'Your browser blocked copying. Press and hold the text to copy it.';box.classList.add('show')}
 $('share').addEventListener('click',e=>{e.stopPropagation();const txt=PASTAS[pasta++%PASTAS.length]({...lastRun,b:best});
- copyPlain(txt).then(ok=>{$('share').textContent=ok?'Copied!':'Copy it below';showBrag(txt,ok);setTimeout(()=>$('share').textContent='Copy brag for the group chat',1600)})});
+ copyPlain(txt).then(ok=>{$('share').textContent=ok?'Copied! Go paste it 😏':'Copy blocked in this browser';setTimeout(()=>$('share').textContent='Copy brag for the group chat',1600)})});
 $('bragClose').addEventListener('click',e=>{e.stopPropagation();$('bragBox').classList.remove('show')});
 $('bragAgain').addEventListener('click',e=>{e.stopPropagation();const t=$('bragText');t.focus();t.select();t.setSelectionRange(0,t.value.length);let ok=false;try{ok=document.execCommand('copy')}catch(err){}
  (ok?Promise.resolve(true):(navigator.clipboard?navigator.clipboard.writeText(t.value).then(()=>true,()=>false):Promise.resolve(false))).then(r=>{$('bragNote').textContent=r?'Copied!':'Press and hold the text to copy it.'})});
